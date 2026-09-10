@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: challenge-engine
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:challenge_engine}
+    username: ${DB_USER:challenge_engine}
+    password: ${DB_PASSWORD:challenge_engine}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

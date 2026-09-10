@@ -1,29 +1,61 @@
-package com.tpi.challengeengine.challenge.domain.model;
+package com.tpi.challengeengine.challenge.infrastructure.persistence.entity;
 
 import com.tpi.challengeengine.challenge.domain.enums.ChallengeDifficulty;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Representa una version historica de un {@link Challenge}.
- * Cada edicion relevante del desafio podra generar una nueva version. Los
- * intentos del alumno quedaran vinculados a una version especifica para
- * preservar exactamente que desafio resolvio. El contenido especializado no
- * se almacena aqui: solo se conserva una referencia administrada por T04 o T05.
+ * Representacion JPA de una version historica en la tabla
+ * {@code challenge_version}. Conserva el vinculo mediante
+ * {@code challengeId}; la integridad de la relacion se delega a PostgreSQL y
+ * no se modela como una asociacion ORM.
  */
-public class ChallengeVersion {
+@Entity
+@Table(
+        name = "challenge_version",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_challenge_version_number",
+                columnNames = {"challenge_id", "version_number"}
+        )
+)
+public class ChallengeVersionJpaEntity {
 
+    @Id
     private UUID id;
+
+    @Column(name = "challenge_id", nullable = false)
     private UUID challengeId;
+
+    @Column(name = "version_number", nullable = false)
     private Integer versionNumber;
+
     private String title;
+
+    @Column(length = 2000)
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 32)
     private ChallengeDifficulty difficulty;
+
+    @Column(name = "content_reference", length = 500)
     private String contentReference;
+
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public ChallengeVersion(
+    protected ChallengeVersionJpaEntity() {
+    }
+
+    public ChallengeVersionJpaEntity(
             UUID id,
             UUID challengeId,
             Integer versionNumber,
