@@ -3,8 +3,9 @@
 Motor de Desafios de la plataforma educativa gamificada.
 
 Esta etapa incorpora la estructura base del microservicio y la persistencia
-PostgreSQL del catalogo de desafios mediante Flyway, JPA, repositorios de
-dominio, adapters y mappers. Tambien incluye Docker local, Swagger y el
+PostgreSQL del catalogo de desafios mediante Flyway, JPA y repositorios Spring
+Data. La organizacion utiliza capas simples de controller, service, model,
+entities, repository y enums. Tambien incluye Docker local, Swagger y el
 healthcheck de Actuator.
 
 ## Ejecucion local
@@ -54,7 +55,7 @@ IMPLEMENTADO:
 - PostgreSQL y Flyway;
 - persistencia de `Challenge`;
 - persistencia de `ChallengeVersion`;
-- repositorios, adapters y mappers;
+- repositorios Spring Data;
 - Docker local;
 - Swagger/OpenAPI;
 - healthcheck de Actuator.
