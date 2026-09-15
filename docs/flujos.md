@@ -13,8 +13,8 @@ Este documento define los recorridos completos que cruzan el Motor y el contrato
 | Gateway / Identidad (T01) | Token validado y contexto de usuario en cada solicitud | Respuestas REST del Motor | REST, siempre por Gateway | Definido |
 | Cursos y Matrícula (T02) | No hay llamada directa en el MVP | No hay evento directo | Indirecto a través de Roadmap | Definido |
 | Roadmap y Progreso (T10) | Elegibilidad para abrir o reintentar; fechas y obligatoriedad | Desafíos publicados por GET; resultado de cada intento por evento | REST sincrónico + Kafka | Definido |
-| Teóricos (T04) | Confirmación de contenido; corrección de entregas teóricas | Entrega con respuestas y versión | REST sincrónico por Gateway | Definido |
-| Prácticos (T05) | Confirmación de contenido; corrección de entregas prácticas | Entrega, referencia y versión | REST sincrónico por Gateway | Definido |
+| Teóricos (T04) | Contenido de la versión; confirmación de contenido; corrección de entregas teóricas | Consulta de contenido; entrega con respuestas y versión | REST sincrónico por Gateway | Definido |
+| Prácticos (T05) | Contenido de la versión; confirmación de contenido; corrección de entregas prácticas | Consulta de contenido; entrega, referencia y versión | REST sincrónico por Gateway | Definido |
 | Evaluador IA (T07) | Score de uso de IA calculado o diferido | Identidad del intento y versión para asociar la evaluación | Evento; mecanismo exacto por confirmar | Parcial |
 | Banco (T08) | No hay llamada directa | Resultado aprobado, obligatoriedad y curso | Kafka | Definido |
 | Mercado (T09) | No hay llamada directa | Ninguna | Sin integración | Definido |
@@ -28,7 +28,7 @@ El Gateway autentica y propaga el token; no decide si el alumno puede abrir un d
 
 ### Roadmap: autorización y contexto de apertura
 
-Antes de crear un intento, el Motor necesita una respuesta de elegibilidad para la combinación alumno, desafío y curso. La respuesta debe incluir:
+Antes de crear un intento, el Motor necesita una respuesta de elegibilidad para la combinación alumno, desafío y curso. Roadmap decide y el Motor hace cumplir esa decisión; el Motor no replica las reglas académicas. La pantalla de Roadmap puede consultar la misma elegibilidad para mostrar feedback, pero esa consulta no reemplaza la validación vigente que hace el Motor al abrir. La respuesta debe incluir:
 
 - habilitación para abrir;
 - motivo de rechazo, si corresponde;
@@ -38,9 +38,13 @@ Antes de crear un intento, el Motor necesita una respuesta de elegibilidad para 
 - contexto de recuperación, si aplica;
 - información necesaria para que Roadmap cuente reintentos y vidas, sin que el Motor los modifique.
 
-El Motor no guarda la asignación, el roadmap, la pertenencia del alumno ni el saldo de vidas. Replica únicamente `cursoId`, `obligatorio` y las marcas necesarias en el intento y en sus eventos.
+La decisión no puede ser solo un booleano: debe incluir un código estable cuando rechaza. El Motor no guarda la asignación, el roadmap, la pertenencia del alumno ni el saldo de vidas. Replica únicamente `cursoId`, `obligatorio` y las marcas necesarias en el intento y en sus eventos.
+
+Dentro de cada roadmap, Roadmap debe garantizar que un `desafioId` se asigne una sola vez. La unicidad es `(roadmapId, desafioId)` y no se implementa en el Motor.
 
 ### Teórico y Práctico: contenido y corrección
+
+Al abrir, el Motor recupera desde T04 o T05 el contenido exacto de la versión autorizada y lo devuelve al frontend junto con el intento. El frontend no consulta directamente al corrector y el Motor no persiste ese contenido. Si no puede recuperarlo, no crea el intento ni inicia el reloj.
 
 Al publicar un desafío, el Motor consulta al servicio correspondiente según `tipo`:
 
@@ -81,7 +85,7 @@ Notificaciones necesita los hechos `DESAFIO_PUBLICADO` e `INTENTO_FINALIZADO` pa
 
 ### Teórico y Práctico
 
-Los correctores necesitan la referencia estable del desafío y la versión congelada para recuperar o validar el contenido correspondiente. También necesitan la entrega y el contexto mínimo del intento para devolver un veredicto idempotente.
+Los correctores entregan al Motor el contenido visible para el alumno de la versión solicitada. También necesitan la referencia estable del desafío, la versión congelada, la entrega y el contexto mínimo del intento para devolver un veredicto idempotente.
 
 ### Evaluador IA
 
@@ -123,7 +127,7 @@ sequenceDiagram
     end
 ```
 
-Crear el desafío y cargar su contenido son pasos separados: T03 entrega el `desafioId` y el `numeroVersion`, y el autor usa ambos identificadores para crear las preguntas teóricas o la consigna y los tests prácticos en T04/T05. La publicación valida que exista esa foto exacta antes de entrar al camino de apertura de alumnos. Roadmap no necesita suscribirse: obtiene el catálogo mediante GET cuando arma o consulta el roadmap.
+En simple, el profesor completa una pantalla, pero el frontend guarda dos partes. Primero manda los datos generales al Motor y recibe `desafioId` + `numeroVersion`; después manda preguntas o código a T04/T05 usando esos mismos valores. No existe otro `contenidoId`. La publicación valida que exista esa foto exacta antes de entrar al camino de apertura de alumnos. Roadmap no necesita suscribirse: obtiene el catálogo mediante GET cuando arma o consulta el roadmap.
 
 ### 2. Editar y sincronizar una versión publicada
 
@@ -162,25 +166,30 @@ sequenceDiagram
     participant G as Gateway
     participant M as Motor
     participant R as Roadmap
+    participant C as T04/T05
 
     A->>G: Abrir intento (desafioId, cursoId, idempotencyKey)
     G->>M: POST /intentos + identidad validada
     M->>G: Consultar elegibilidad
     G->>R: GET /elegibilidad
-    R-->>G: habilitado, fechas, obligatorio, recuperación
-    G-->>M: Contexto de apertura
+    R-->>G: habilitado, motivo, fechas, obligatorio, recuperación
+    G-->>M: Decisión y contexto de apertura
     alt habilitado
-        M->>M: Lee version_actual y congela la versión
-        M->>M: Crea intento ABIERTO con reloj propio
-        M-->>G: Intento abierto
-        G-->>A: intentoId, versión y vencimiento
+        M->>M: Lee version_actual
+        M->>G: Pedir contenido de esa versión
+        G->>C: GET contenido(desafioId, numeroVersion)
+        C-->>G: Contenido teórico o práctico
+        G-->>M: Contenido exacto
+        M->>M: Crea intento ABIERTO y congela la versión
+        M-->>G: Intento abierto + contenido
+        G-->>A: intentoId, contenido y vencimiento
     else rechazado
         M-->>G: Motivo de rechazo
         G-->>A: No se crea intento
     end
 ```
 
-La clave de idempotencia devuelve el intento existente ante un reintento de red. Si Roadmap no autoriza, el Motor no adivina permisos ni crea un intento parcial.
+En simple: el alumno pide empezar; Roadmap dice si puede; el Motor busca el contenido correcto; recién entonces crea el intento, inicia el reloj y devuelve todo. El frontend habla solo con el Motor. La clave de idempotencia devuelve el intento existente ante un reintento de red. Si Roadmap no autoriza o T04/T05 no entrega el contenido, el Motor no crea un intento parcial.
 
 ### 4. Entregar y corregir un intento teórico o práctico
 
@@ -241,6 +250,7 @@ sequenceDiagram
     participant R as Roadmap
     participant G as Gateway
     participant M as Motor
+    participant C as T04/T05
     participant K as Kafka
 
     R->>R: Cuenta intentos y evalúa vidas
@@ -249,8 +259,10 @@ sequenceDiagram
     M->>G: Consulta elegibilidad
     G->>R: Estado de desbloqueo, vidas y reintentos
     R-->>M: Autorizado + contexto
+    M->>C: Recupera contenido de la versión
+    C-->>M: Contenido exacto
     M->>M: Crea un intento nuevo con reloj propio
-    M-->>A: Intento abierto
+    M-->>A: Intento abierto + contenido
     M->>K: INTENTO_FINALIZADO al cerrar
     K-->>R: Decide efecto en XP, vidas y progreso
 ```

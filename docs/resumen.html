@@ -250,9 +250,9 @@
           <thead><tr><th>Grupo</th><th>El grupo entrega al Motor</th><th>El Motor entrega al grupo</th><th>Canal</th><th>Contrato</th></tr></thead>
           <tbody>
             <tr><td>Gateway / Identidad <small>T01</small></td><td>Token validado, identidad y contexto</td><td>Respuestas REST del Motor</td><td>REST a través del Gateway</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Responsabilidad</span>Valida autenticidad y vigencia del token. Propaga el contexto sin decidir la elegibilidad académica.</p><p><span class="contract-label">Rutas del Motor</span><code>POST /desafios</code>, <code>GET /desafios</code>, <code>PATCH /desafios/{desafioId}</code>, <code>POST /intentos</code>, <code>GET /intentos/{intentoId}</code> y <code>POST /intentos/{intentoId}/entrega</code>.</p><p>Las llamadas sincrónicas entre servicios también pasan por el Gateway.</p></div></details></td></tr>
-            <tr><td>Roadmap y Progreso <small>T10</small></td><td>Elegibilidad, fechas, obligatoriedad y recuperación</td><td>Catálogo publicado y <code>INTENTO_FINALIZADO</code></td><td>REST + Kafka</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Motor consulta</span><code>GET /elegibilidad</code> con <code>alumnoId</code>, <code>desafioId</code> y <code>cursoId</code>. Recibe habilitación, desbloqueo, fechas, obligatoriedad, recuperación y motivo de rechazo.</p><p><span class="contract-label">Motor entrega</span><code>GET /desafios?estado=PUBLICADO</code> y el evento <code>INTENTO_FINALIZADO</code>. Roadmap aplica XP, vidas, progreso, ranking y reintentos.</p><p>La clave funcional del resultado es <code>intentoId</code>.</p></div></details></td></tr>
-            <tr><td>Teóricos <small>T04</small></td><td>Corrección de entregas teóricas</td><td>Referencia de versión y entrega</td><td>REST a través del Gateway</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Corrección</span>El Motor envía <code>intentoId</code>, desafío, versión, alumno, curso y entrega. T04 devuelve <code>estadoCorreccion</code>, <code>aprobado</code> y <code>puntaje</code>.</p><p>T04 corrige contra la versión recibida, no contra la vigente.</p></div></details></td></tr>
-            <tr><td>Prácticos <small>T05</small></td><td>Corrección de entregas prácticas</td><td>Referencia de versión y entrega</td><td>REST a través del Gateway</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Corrección</span>El Motor envía <code>intentoId</code>, desafío, versión, alumno, curso y entrega. T05 devuelve <code>estadoCorreccion</code>, <code>aprobado</code> y <code>puntaje</code>.</p><p>T05 puede mediar la ejecución en Sandbox, pero el Motor solo recibe la corrección.</p></div></details></td></tr>
+            <tr><td>Roadmap y Progreso <small>T10</small></td><td>Elegibilidad, fechas, obligatoriedad y recuperación</td><td>Catálogo publicado y <code>INTENTO_FINALIZADO</code></td><td>REST + Kafka</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Roadmap decide</span><code>GET /elegibilidad</code> con <code>alumnoId</code>, <code>desafioId</code> y <code>cursoId</code>. Devuelve habilitación, motivo, desbloqueo, fechas, obligatoriedad y recuperación. La pantalla puede anticipar esta consulta, pero el Motor vuelve a hacerla al abrir.</p><p><span class="contract-label">Motor entrega</span><code>GET /desafios?estado=PUBLICADO</code> y el evento <code>INTENTO_FINALIZADO</code>. Roadmap aplica XP, vidas, progreso, ranking y reintentos.</p><p>Cada <code>desafioId</code> se asigna una sola vez por roadmap.</p></div></details></td></tr>
+            <tr><td>Teóricos <small>T04</small></td><td>Contenido y corrección de entregas teóricas</td><td>Referencia de versión y entrega</td><td>REST a través del Gateway</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Apertura</span>El Motor recupera el contenido de la versión exacta y lo devuelve junto con el intento.</p><p><span class="contract-label">Corrección</span>El Motor envía <code>intentoId</code>, desafío, versión, alumno, curso y entrega. T04 devuelve <code>estadoCorreccion</code>, <code>aprobado</code> y <code>puntaje</code>.</p></div></details></td></tr>
+            <tr><td>Prácticos <small>T05</small></td><td>Contenido y corrección de entregas prácticas</td><td>Referencia de versión y entrega</td><td>REST a través del Gateway</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Apertura</span>El Motor recupera el contenido de la versión exacta y lo devuelve junto con el intento.</p><p><span class="contract-label">Corrección</span>El Motor envía <code>intentoId</code>, desafío, versión, alumno, curso y entrega. T05 devuelve <code>estadoCorreccion</code>, <code>aprobado</code> y <code>puntaje</code>.</p></div></details></td></tr>
             <tr><td>Evaluador IA <small>T07</small></td><td><code>SCORE_IA_CALCULADO</code></td><td>Referencia del intento y versión</td><td>Evento, mecanismo por confirmar</td><td><details class="dependency-contract"><summary><span class="status partial">Parcial</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Motor recibe</span><code>SCORE_IA_CALCULADO</code> asociado a <code>intentoId</code>. La carga mínima incluye <code>scoreIA</code> y <code>timestamp</code>; <code>rubricVersion</code> y justificación están pendientes.</p><p><span class="contract-label">Después del cierre</span>El Motor actualiza el score y republica <code>INTENTO_FINALIZADO</code> con el mismo <code>intentoId</code>.</p><p>Topic, productor, envío de referencia y política de reintentos todavía deben acordarse con T07.</p></div></details></td></tr>
             <tr><td>Banco <small>T08</small></td><td>No envía solicitudes</td><td><code>INTENTO_FINALIZADO</code></td><td>Kafka</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Consumo</span>Recibe el sobre común de <code>INTENTO_FINALIZADO</code>, incluidos <code>cursoId</code>, <code>obligatorio</code>, estado y resultado.</p><p><span class="contract-label">Regla</span>Acredita solo si <code>estado=CERRADO</code> y <code>aprobado=true</code>. Ignora los intentos vencidos o no aprobados.</p><p>Aplica idempotencia por <code>intentoId</code>.</p></div></details></td></tr>
             <tr><td>Social y Notificaciones <small>T11</small></td><td>No envía solicitudes de negocio</td><td><code>DESAFIO_PUBLICADO</code> e <code>INTENTO_FINALIZADO</code></td><td>Kafka</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Consumo</span>Recibe <code>DESAFIO_PUBLICADO</code> al publicar y <code>INTENTO_FINALIZADO</code> al cerrar o vencer.</p><p><span class="contract-label">Regla</span>Decide plantilla, destinatarios y momento. La nota disponible se deriva de <code>INTENTO_FINALIZADO</code>; no hay un evento separado.</p><p>El Motor publica al menos una vez mediante outbox.</p></div></details></td></tr>
@@ -262,14 +262,15 @@
     </section>
 
     <section id="decisiones">
-      <div class="section-head"><h2>Decisiones del Motor</h2><span class="section-index">6 reglas</span></div>
+      <div class="section-head"><h2>Decisiones del Motor</h2><span class="section-index">7 reglas</span></div>
       <ol class="decision-list">
-        <li><span class="number">01</span><div><strong>Roadmap autoriza.</strong><p>Asignaciones, fechas, desbloqueos, vidas y reintentos quedan fuera de T03.</p></div></li>
-        <li><span class="number">02</span><div><strong>La versión se congela al abrir.</strong><p>Cada edición crea una versión nueva y el intento conserva la que recibió.</p></div></li>
-        <li><span class="number">03</span><div><strong>El reloj se frena al entregar.</strong><p>La demora del corrector o del evaluador no consume tiempo del alumno.</p></div></li>
-        <li><span class="number">04</span><div><strong>T03 no calcula recompensas.</strong><p>Roadmap decide XP y vidas. Banco decide monedas.</p></div></li>
-        <li><span class="number">05</span><div><strong>Un hecho, un evento.</strong><p><code>INTENTO_FINALIZADO</code> cubre cierres y vencimientos. No hay eventos separados para vidas o notas.</p></div></li>
-        <li><span class="number">06</span><div><strong>Kafka entrega al menos una vez.</strong><p>T03 usa outbox y los consumidores aplican idempotencia por <code>intentoId</code>.</p></div></li>
+        <li><span class="number">01</span><div><strong>Roadmap decide; el Motor exige.</strong><p>Asignaciones, fechas, desbloqueos, vidas y reintentos quedan fuera de T03.</p></div></li>
+        <li><span class="number">02</span><div><strong>El Motor entrega el contenido.</strong><p>Recupera de T04/T05 la versión exacta antes de crear el intento; el frontend no consulta al corrector.</p></div></li>
+        <li><span class="number">03</span><div><strong>La versión se congela al abrir.</strong><p>Cada edición crea una versión nueva y el intento conserva la que recibió.</p></div></li>
+        <li><span class="number">04</span><div><strong>El reloj se frena al entregar.</strong><p>La demora del corrector o del evaluador no consume tiempo del alumno.</p></div></li>
+        <li><span class="number">05</span><div><strong>T03 no calcula recompensas.</strong><p>Roadmap decide XP y vidas. Banco decide monedas.</p></div></li>
+        <li><span class="number">06</span><div><strong>Un hecho, un evento.</strong><p><code>INTENTO_FINALIZADO</code> cubre cierres y vencimientos. No hay eventos separados para vidas o notas.</p></div></li>
+        <li><span class="number">07</span><div><strong>Kafka entrega al menos una vez.</strong><p>T03 usa outbox y los consumidores aplican idempotencia por <code>intentoId</code>.</p></div></li>
       </ol>
     </section>
 
@@ -281,8 +282,8 @@
     G --&gt; M[Motor T03]
     M --&gt;|consulta elegibilidad| R[Roadmap]
     R --&gt;|contexto| M
-    M --&gt;|corrección| C[T04 / T05]
-    C --&gt;|resultado| M
+    M --&gt;|contenido y entrega| C[T04 / T05]
+    C --&gt;|contenido y corrección| M
     M --&gt;|hechos| K[(Kafka)]
     K --&gt; R
     K --&gt; B[Banco]
@@ -359,8 +360,8 @@
     <section id="contratos">
       <div class="section-head"><h2>Contratos de entrada y salida</h2></div>
       <div class="grid">
-        <article class="card"><span class="tag in">Entrada</span><h3>Roadmap autoriza</h3><p>Antes de abrir, devuelve habilitación, desbloqueo, fechas, obligatoriedad y contexto de recuperación. El Motor no guarda la asignación ni vidas.</p></article>
-        <article class="card"><span class="tag in">Entrada</span><h3>T04 / T05 corrigen</h3><p>Reciben entrega, intento, desafío y versión. Devuelven aprobado, puntaje y estado de corrección. El contenido permanece fuera del Motor.</p></article>
+        <article class="card"><span class="tag in">Entrada</span><h3>Roadmap decide</h3><p>Antes de abrir, devuelve habilitación, motivo, desbloqueo, fechas, obligatoriedad y contexto de recuperación. El Motor exige esa decisión y no guarda la asignación ni vidas.</p></article>
+        <article class="card"><span class="tag in">Entrada</span><h3>T04 / T05 entregan contenido y corrigen</h3><p>El Motor recupera el contenido exacto al abrir. Al entregar, los correctores reciben intento, desafío y versión, y devuelven el resultado. El contenido permanece fuera del Motor.</p></article>
         <article class="card"><span class="tag pending">Entrada parcial</span><h3>T07 puntúa IA</h3><p>Entrega un score asociado a <code>intentoId</code>. Puede llegar después del cierre; el nombre del evento y su esquema todavía se acuerdan.</p></article>
         <article class="card"><span class="tag out">Salida</span><h3>Roadmap consume hechos</h3><p><code>INTENTO_FINALIZADO</code> alimenta XP, progreso, vidas, ranking y desbloqueos. No existe evento de reintentos agotados.</p></article>
         <article class="card"><span class="tag out">Salida</span><h3>Banco acredita</h3><p>Usa el resultado aprobado, <code>cursoId</code> y <code>obligatorio</code> para su ledger. El Motor no calcula monedas ni envía ítems.</p></article>
@@ -373,19 +374,25 @@
 
       <article class="flow">
         <div class="flow-title"><h3>Crear y publicar un desafío</h3><span class="number">FLUJO 01</span></div>
-        <p class="flow-note">T03 crea la identidad y su primera versión. Luego publica la versión y avisa a los consumidores.</p>
+        <p class="flow-note">El frontend guarda los datos generales en T03 y el contenido en T04/T05 usando el mismo desafioId y número de versión. Luego T03 publica.</p>
         <pre class="mermaid">sequenceDiagram
     participant P as Profesor/Admin
     participant G as Gateway
     participant M as Motor
+    participant C as T04/T05
     participant K as Kafka
     participant R as Roadmap
     participant N as Notificaciones
     P-&gt;&gt;G: Crear desafío
     G-&gt;&gt;M: POST /desafios
     M--&gt;&gt;P: BORRADOR + desafioId + version 1
+    P-&gt;&gt;G: Guardar contenido con desafioId + version 1
+    G-&gt;&gt;C: PUT contenido de versión 1
+    C--&gt;&gt;P: Contenido guardado
     P-&gt;&gt;G: Solicitar publicación de versión 1
     G-&gt;&gt;M: POST /desafios/id/versiones/1/publicar
+    M-&gt;&gt;C: Validar contenido de versión 1
+    C--&gt;&gt;M: Disponible
     M-&gt;&gt;M: Activar versión 1
     M-&gt;&gt;K: DESAFIO_PUBLICADO
     K--&gt;&gt;N: Notificación
@@ -396,6 +403,7 @@
         <div class="sequence">
           <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Crear desafío</span><span class="actor right">Motor</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message reverse">BORRADOR + desafioId + versión 1 <span class="arrow">←</span></span><span class="actor right">Profesor / Admin</span></div>
+          <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Guardar contenido con desafioId + versión 1</span><span class="actor right">T04 / T05</span></div>
           <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Publicar versión 1</span><span class="actor right">Motor</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Activar versión 1 <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>DESAFIO_PUBLICADO</span><span class="actor right">Kafka → T11</span></div>
@@ -411,18 +419,25 @@
     participant P as Profesor/Admin
     participant G as Gateway
     participant M as Motor
+    participant C as T04/T05
     P-&gt;&gt;G: Editar metadatos
     G-&gt;&gt;M: PATCH /desafios/id
     M-&gt;&gt;M: Crear revisión N+1 en BORRADOR
     M--&gt;&gt;P: desafioId + numeroVersion N+1
+    P-&gt;&gt;G: Guardar contenido de N+1
+    G-&gt;&gt;C: PUT contenido de N+1
+    C--&gt;&gt;P: Contenido guardado
     P-&gt;&gt;G: Solicitar publicación de versión N+1
     G-&gt;&gt;M: POST /desafios/id/versiones/N+1/publicar
+    M-&gt;&gt;C: Validar contenido de N+1
+    C--&gt;&gt;M: Disponible
     M-&gt;&gt;M: Activar N+1
     Note over M,P: Los intentos anteriores conservan su versión</pre>
         <div class="sequence">
           <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Editar metadatos</span><span class="actor right">Motor</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Crear revisión N+1 en borrador <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message reverse">Devolver desafioId + versión N+1 <span class="arrow">←</span></span><span class="actor right">Profesor / Admin</span></div>
+          <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Guardar contenido de N+1</span><span class="actor right">T04 / T05</span></div>
           <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Publicar versión N+1</span><span class="actor right">Motor</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Activar N+1; los intentos anteriores no cambian <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
         </div>
@@ -430,12 +445,13 @@
 
       <article class="flow">
         <div class="flow-title"><h3>Abrir un intento autorizado</h3><span class="number">FLUJO 03</span></div>
-        <p class="flow-note">El Gateway autentica. Roadmap autoriza. El Motor congela <code>version_actual</code> y crea el intento, con idempotencia.</p>
+        <p class="flow-note">Roadmap decide si el alumno puede abrir. El Motor recupera el contenido exacto y solo entonces crea el intento e inicia el reloj.</p>
         <pre class="mermaid">sequenceDiagram
     participant A as Alumno
     participant G as Gateway
     participant M as Motor
     participant R as Roadmap
+    participant C as T04/T05
     A-&gt;&gt;G: desafioId, cursoId, clave
     G-&gt;&gt;M: POST /intentos + identidad
     M-&gt;&gt;G: Consultar elegibilidad
@@ -443,9 +459,12 @@
     R--&gt;&gt;G: Habilitación, fechas y contexto
     G--&gt;&gt;M: Respuesta de Roadmap
     alt Habilitado
-        M-&gt;&gt;M: Congelar version_actual
-        M-&gt;&gt;M: Crear intento ABIERTO
-        M--&gt;&gt;A: Intento abierto
+        M-&gt;&gt;G: Recuperar contenido de version_actual
+        G-&gt;&gt;C: GET contenido de la versión
+        C--&gt;&gt;G: Contenido exacto
+        G--&gt;&gt;M: Contenido exacto
+        M-&gt;&gt;M: Congelar versión y crear ABIERTO
+        M--&gt;&gt;A: Intento abierto + contenido
     else Rechazado
         M--&gt;&gt;A: Motivo de rechazo
     end</pre>
@@ -456,8 +475,9 @@
           <div class="step"><span class="actor">Gateway</span><span class="message"><span class="arrow">→</span>GET /elegibilidad</span><span class="actor right">Roadmap</span></div>
           <div class="step"><span class="actor">Roadmap</span><span class="message reverse">Habilitación, fechas, contexto <span class="arrow">←</span></span><span class="actor right">Gateway</span></div>
           <div class="step"><span class="actor">Gateway</span><span class="message reverse">Respuesta de Roadmap <span class="arrow">←</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>Recuperar contenido de la versión</span><span class="actor right">T04 / T05</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Congelar versión y crear ABIERTO <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
-          <div class="step"><span class="actor">Motor</span><span class="message reverse">Intento abierto <span class="arrow">←</span></span><span class="actor right">Alumno</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message reverse">Intento abierto + contenido <span class="arrow">←</span></span><span class="actor right">Alumno</span></div>
         </div>
       </article>
 
@@ -536,6 +556,7 @@
     participant G as Gateway
     participant M as Motor
     participant R as Roadmap
+    participant C as T04/T05
     participant K as Kafka
     R-&gt;&gt;R: Contar intentos y elegir recuperación
     A-&gt;&gt;G: Abrir nuevo intento
@@ -544,8 +565,12 @@
     G-&gt;&gt;R: Estado de vidas y reintentos
     R--&gt;&gt;G: Autorizado + contexto
     G--&gt;&gt;M: Autorizado + contexto
+    M-&gt;&gt;G: Recuperar contenido de la versión
+    G-&gt;&gt;C: GET contenido exacto
+    C--&gt;&gt;G: Contenido
+    G--&gt;&gt;M: Contenido
     M-&gt;&gt;M: Crear intento nuevo
-    M--&gt;&gt;A: Intento abierto
+    M--&gt;&gt;A: Intento abierto + contenido
     M-&gt;&gt;K: INTENTO_FINALIZADO
     K--&gt;&gt;R: Aplicar efecto en XP, vidas y progreso</pre>
         <div class="sequence">
@@ -555,6 +580,7 @@
           <div class="step"><span class="actor">Gateway</span><span class="message"><span class="arrow">→</span>Estado de vidas y reintentos</span><span class="actor right">Roadmap</span></div>
           <div class="step"><span class="actor">Roadmap</span><span class="message reverse">Autorizado + contexto <span class="arrow">←</span></span><span class="actor right">Gateway</span></div>
           <div class="step"><span class="actor">Gateway</span><span class="message reverse">Autorizado + contexto <span class="arrow">←</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>Recuperar contenido de la versión</span><span class="actor right">Gateway → T04 / T05</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Crea intento nuevo con reloj propio <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
           <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>Resultado finalizado</span><span class="actor right">Kafka → Roadmap</span></div>
           <div class="step"><span class="actor">Roadmap</span><span class="message internal"><span class="arrow">·</span>Acredita una vida si el desafío de recuperación fue aprobado <span class="arrow">·</span></span><span class="actor right">Roadmap</span></div>

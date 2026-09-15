@@ -3,7 +3,7 @@ stateDiagram-v2
     BORRADOR --> PUBLICADO : publicar (exige contenido)
     PUBLICADO --> BORRADO_LOGICO : borrar
     BORRADO_LOGICO --> [*]
-    [*] --> ABIERTO : Roadmap autoriza
+    [*] --> ABIERTO : Roadmap habilita y contenido disponible
     ABIERTO --> EN_CORRECCION : entregar (frena reloj)
     EN_CORRECCION --> CERRADO : llega correccion
     ABIERTO --> VENCIDO : plazo cierra sin entrega

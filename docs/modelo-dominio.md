@@ -30,7 +30,7 @@ Cada edición, hasta un typo o un cambio en el contenido evaluable, crea una rev
 
 ## Intento
 
-Apertura de un desafío por un alumno en un curso. Guarda inicio, entrega, tiempo en segundos, estado y puntualidad, más el contexto replicado (curso, obligatorio). Pasa por abierto, en corrección, cerrado o vencido. El reloj corre solo en abierto: se frena al entregar y la demora del corrector no cuenta. Cada reintento es un intento nuevo con reloj propio. Vencido es plazo cerrado sin entrega: se publica igual y Roadmap decide el efecto.
+Apertura de un desafío por un alumno en un curso. Roadmap decide la elegibilidad y el Motor la hace cumplir. Después, el Motor recupera de T04/T05 el contenido de la versión elegida; solo si lo obtiene crea el intento, inicia el reloj y devuelve ambos al alumno. Guarda inicio, entrega, tiempo en segundos, estado y puntualidad, más el contexto replicado (curso, obligatorio), pero no persiste el contenido. Pasa por abierto, en corrección, cerrado o vencido. El reloj corre solo en abierto: se frena al entregar y la demora del corrector no cuenta. Cada reintento es un intento nuevo con reloj propio. Vencido es plazo cerrado sin entrega: se publica igual y Roadmap decide el efecto.
 
 ## Corrección y score IA
 
@@ -42,11 +42,13 @@ No nos tocan. Viven en Mercado con estados activo e inactivo, y cada consumidor 
 
 ## Lo referenciado
 
-Asignación (orden, fechas, obligatoriedad) de Roadmap. Contenido teórico de T04 y práctico de T05: la referencia vive del otro lado, ellos guardan nuestro desafioId y nosotros nada de ellos. Por eso el Desafío nace primero acá. XP, monedas y vidas de Roadmap y Banco: el Motor solo publica los hechos que los disparan.
+Asignación (orden, fechas, obligatoriedad) de Roadmap, única por pareja roadmap-desafío. Contenido teórico de T04 y práctico de T05: la referencia vive del otro lado, ellos guardan nuestro `desafioId` + `numeroVersion`; el Motor lo recupera al abrir pero no lo persiste. Por eso el Desafío nace primero acá. XP, monedas y vidas de Roadmap y Banco: el Motor solo publica los hechos que los disparan.
 
 ## Invariantes
 
-- Sin elegibilidad de Roadmap no se abre.
+- Roadmap decide la elegibilidad y el Motor la exige antes de abrir.
+- Si el contenido exacto no puede recuperarse, no se crea el intento ni se inicia el reloj.
+- Un mismo desafío aparece como máximo una vez en cada roadmap.
 - Borrador no se asigna, borrado no se asigna ni se edita.
 - Un intento apunta a una sola versión y no la cambia.
 - Cerrado y vencido son finales: no aceptan entregas ni ediciones.

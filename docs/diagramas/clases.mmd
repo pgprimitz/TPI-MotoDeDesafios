@@ -28,6 +28,7 @@ classDiagram
     class Contenido {
         <<externo>>
         +UUID desafioId
+        +int numeroVersion
     }
     class Asignacion {
         <<externo>>
@@ -35,6 +36,6 @@ classDiagram
         +obligatorio
     }
     Desafio "1" --> "*" VersionDesafio : congela
-    Desafio "1" --> "0..1" Contenido : tiene (T04/T05)
+    VersionDesafio "1" --> "0..1" Contenido : recupera de T04/T05
     VersionDesafio "1" --> "*" Intento : abre con
     Asignacion --> Intento : autoriza y da contexto

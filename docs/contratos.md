@@ -1,6 +1,6 @@
 # Contratos de integración del Motor de desafíos
 
-Este documento reúne los contratos que el Motor necesita ofrecer y consumir para integrarse con los demás grupos. Es la especificación funcional de integración, no un `openapi.yaml`: los nombres de ruta y algunos topics aún deben confirmarse con sus dueños. Los recorridos visuales están en [`flujos.html`](flujos.html) y la versión narrativa en [`flujos.md`](flujos.md).
+Este documento reúne los contratos que el Motor necesita ofrecer y consumir para integrarse con los demás grupos. Es la especificación funcional de integración, no un `openapi.yaml`: los nombres de ruta y algunos topics aún deben confirmarse con sus dueños. Los recorridos visuales están en [`resumen.html`](resumen.html) y la versión narrativa en [`flujos.md`](flujos.md).
 
 ## 1. Criterio y fuentes
 
@@ -20,8 +20,8 @@ La propuesta anterior de límites del Motor contiene dos decisiones que no se tr
 | Versiones del desafío | Motor (T03) | Persiste como fotos inmutables |
 | Asignación al curso, orden y desbloqueo | Roadmap/Cursos (T10/T02) | Consulta elegibilidad; no guarda asignación |
 | Pertenencia del alumno al curso | Cursos/Matrícula (T02) | No la valida directamente; llega resuelta por Roadmap |
-| Preguntas y respuestas teóricas | Teóricos (T04) | No persiste |
-| Consigna, código y casos de prueba | Prácticos (T05) | No persiste |
+| Preguntas y respuestas teóricas | Teóricos (T04) | No persiste; recupera la versión exacta al abrir el intento |
+| Consigna, código y casos de prueba | Prácticos (T05) | No persiste; recupera la versión exacta al abrir el intento |
 | Corrección académica | T04 o T05 | Guarda el veredicto recibido junto al intento |
 | Score de uso de IA | Evaluador IA (T07) | Guarda y replica el score sin calcularlo |
 | XP, progreso, vidas y ranking | Roadmap (T10) | Publica el hecho que los dispara |
@@ -36,7 +36,7 @@ La propuesta anterior de límites del Motor contiene dos decisiones que no se tr
 
 - El API Gateway es la única puerta de entrada.
 - Las llamadas sincrónicas entre servicios también pasan por el Gateway; no hay comunicación directa ni acceso a bases ajenas.
-- Se usa REST cuando el Motor necesita la respuesta para continuar: elegibilidad, disponibilidad de contenido y corrección.
+- Se usa REST cuando el Motor necesita la respuesta para continuar: elegibilidad, recuperación o disponibilidad de contenido y corrección.
 - Las respuestas deben ser autocontenidas y no exponer entidades de la base del servicio vecino.
 - El Gateway valida autenticidad y vigencia del token. El Motor aplica autorización propia sobre catálogo y operaciones; Roadmap decide la elegibilidad académica.
 
@@ -72,6 +72,8 @@ Las rutas siguientes son las rutas lógicas que deben acordarse con el Gateway. 
 **Actor:** ADMIN o PROFESOR autenticado  
 **Ruta lógica:** `POST /desafios`  
 **Resultado:** desafío en `BORRADOR` con su primera versión.
+
+En simple: el formulario del frontend representa un solo desafío, pero guarda sus dos partes en sus respectivos dueños. Primero crea los metadatos en el Motor y recibe `desafioId` + `numeroVersion`; después guarda el contenido en T04 o T05 con esa misma pareja. No se crea un `contenidoId` adicional.
 
 ```json
 {
@@ -171,7 +173,7 @@ Solicitud conceptual:
 }
 ```
 
-El campo `contenido` es propiedad del corrector y su esquema no se define en T03. T04/T05 debe guardar una foto identificada por `(desafioId, numeroVersion)` y hacer idempotente la escritura de esa pareja. T03 no guarda una copia del contenido ni crea una segunda tabla de preguntas o tests.
+El frontend puede mostrar todo en una sola pantalla, pero envía dos solicitudes por el Gateway: metadatos al Motor y contenido al corrector correspondiente. El campo `contenido` es propiedad del corrector y su esquema no se define en T03. T04/T05 debe guardar una foto identificada por `(desafioId, numeroVersion)` y hacer idempotente la escritura de esa pareja. T03 no guarda una copia del contenido ni crea una segunda tabla de preguntas o tests.
 
 La carga debe completarse antes de publicar. Si cambia cualquier dato que afecte la evaluación, se debe crear otra revisión en T03; no se modifica contenido de una versión ya publicada.
 
@@ -223,7 +225,7 @@ El nombre HTTP exacto debe acordarse con el Gateway; la semántica de borrado l�
 }
 ```
 
-El `alumnoId` proviene de la identidad autenticada, no del body. El Motor consulta elegibilidad a Roadmap y solo crea el intento cuando recibe autorización.
+El `alumnoId` proviene de la identidad autenticada, no del body. El Motor consulta elegibilidad a Roadmap, selecciona la versión vigente y recupera su contenido desde T04 o T05. Solo crea el intento y arranca el reloj cuando Roadmap habilita la apertura y el contenido se recupera correctamente.
 
 Respuesta exitosa:
 
@@ -237,7 +239,8 @@ Respuesta exitosa:
   "esRecuperacion": false,
   "estado": "ABIERTO",
   "inicio": "2026-09-05T19:35:00Z",
-  "fechaCierre": "2026-09-05T20:20:00Z"
+  "fechaCierre": "2026-09-05T20:20:00Z",
+  "contenido": {}
 }
 ```
 
@@ -245,8 +248,10 @@ Reglas:
 
 - Un desafío en borrador o borrado no se abre.
 - La elegibilidad de Roadmap es obligatoria; sin ella no se crea un intento.
+- El Motor, no el frontend, recupera el contenido exacto según el tipo, `desafioId` y `numeroVersion` del intento.
+- Si T04/T05 no entrega el contenido, no se crea el intento ni comienza el reloj.
 - `version_actual` se copia en el intento dentro de la misma transacción.
-- Una clave repetida devuelve el intento previamente creado.
+- Una clave repetida devuelve el intento previamente creado junto con el contenido de su versión.
 - Cada reintento es un `intentoId` nuevo y tiene reloj propio.
 
 ### 4.8 Consultar un intento
@@ -327,11 +332,33 @@ Respuesta mínima:
 }
 ```
 
-Roadmap decide disponibilidad, desbloqueo, pertenencia, reintentos y vidas. Puede rechazar una apertura por cualquiera de esas reglas. El Motor no necesita conocer ni persistir el saldo de vidas: necesita una decisión de autorización y el contexto para registrar el intento.
+Roadmap es el único dueño de esta decisión: decide disponibilidad, desbloqueo, pertenencia, reintentos y vidas. Puede rechazar una apertura por cualquiera de esas reglas. El Motor no vuelve a implementar esas reglas; exige la autorización antes de crear el intento. El Motor tampoco necesita conocer ni persistir el saldo de vidas: necesita la decisión y el contexto para registrar el intento.
 
-Si la apertura se rechaza, la respuesta debe ser estable y legible para que el Motor pueda devolver el motivo sin traducir reglas ajenas.
+La interfaz de Roadmap puede consultar esta misma elegibilidad para anticipar si el alumno puede empezar y mostrar el motivo de rechazo. Esa consulta es solo feedback: el Motor debe pedir una decisión vigente al momento de abrir para evitar usar un resultado desactualizado.
 
-### 5.2 Disponibilidad de contenido
+La respuesta no puede reducirse a un booleano. Si la apertura se rechaza, debe incluir un código de motivo estable y legible para que Roadmap muestre feedback y el Motor lo devuelva sin traducir reglas ajenas.
+
+Cada roadmap debe impedir asignar dos veces el mismo `desafioId`, mediante una unicidad equivalente a `(roadmapId, desafioId)`. Esta regla pertenece a Roadmap; el Motor no puede garantizarla porque no persiste asignaciones.
+
+### 5.2 Recuperación de contenido para abrir
+
+**Dirección:** Motor → Gateway → T04 o T05
+
+**Momento:** después de recibir elegibilidad positiva y antes de crear el intento.
+
+Solicitud mínima:
+
+```json
+{
+  "desafioId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "numeroVersion": 2,
+  "tipo": "PRACTICO"
+}
+```
+
+T04 o T05 devuelve el contenido visible para el alumno de esa versión exacta. El Motor lo incluye en la respuesta de apertura, pero no lo persiste ni lo interpreta. El frontend nunca consulta el contenido directamente. Si la recuperación falla, el intento no se crea y el reloj no empieza.
+
+### 5.3 Disponibilidad de contenido
 
 **Dirección:** Motor → Gateway → T04 o T05  
 **Momento:** al publicar o cuando cambia el tipo del desafío.
@@ -348,7 +375,7 @@ Solicitud mínima:
 
 El corrector responde si existe contenido suficiente para publicar exactamente esa versión. El contrato exacto de ruta y los criterios de “contenido cargado” pertenecen a T04/T05.
 
-### 5.3 Corrección de una entrega
+### 5.4 Corrección de una entrega
 
 **Dirección:** Motor → Gateway → T04 o T05  
 **Momento:** después de aceptar una entrega.
@@ -522,7 +549,7 @@ Consume `DESAFIO_PUBLICADO` e `INTENTO_FINALIZADO`. Decide destinatarios, planti
 
 ### T04 y T05
 
-Necesitan `desafioId`, `numeroVersion`, `intentoId`, entrega y contexto mínimo. Deben conservar la semántica de versión congelada y devolver un resultado idempotente.
+Entregan al Motor el contenido visible para el alumno de una pareja `desafioId` + `numeroVersion`. Para corregir necesitan `desafioId`, `numeroVersion`, `intentoId`, entrega y contexto mínimo. Deben conservar la semántica de versión congelada y devolver un resultado idempotente.
 
 ### T07
 
@@ -542,7 +569,8 @@ La forma exacta del error común debe acordarse a nivel Gateway. La semántica m
 | Clave de apertura repetida | Se devuelve el intento existente |
 | Intento no abierto al entregar | Rechazo; no se altera el estado |
 | Entrega duplicada | Se devuelve el resultado idempotente o el estado vigente |
-| Corrector no disponible | No se finaliza la corrección; timeout, reintento y fallback deben acordarse con T04/T05 |
+| Corrector no disponible al abrir | No se crea el intento ni comienza el reloj |
+| Corrector no disponible al entregar | No se finaliza la corrección; timeout, reintento y fallback deben acordarse con T04/T05 |
 | Bus no disponible al cerrar | El intento permanece cerrado y el outbox reintenta |
 | Evento duplicado | Consumidor descarta o reaplica sin duplicar efecto |
 
@@ -600,7 +628,7 @@ ABIERTO -> VENCIDO
 
 1. Rutas definitivas, nombres de campos y formato de error del Gateway.
 2. Endpoint y respuesta final de elegibilidad de Roadmap.
-3. Endpoints, timeout y estados de corrección de T04/T05.
+3. Endpoints, timeout, recuperación de contenido y estados de corrección de T04/T05.
 4. Topic, envelope y esquema de `SCORE_IA_CALCULADO` con T07.
 5. Política ante score IA diferido, doble evaluación y `rubricVersion`.
 6. Ventana de entrega tardía y efecto del vencimiento sobre vidas y XP.
@@ -619,6 +647,7 @@ ABIERTO -> VENCIDO
 | Publicación exige contenido | [`adr/0006-publicar-exige-contenido.md`](adr/0006-publicar-exige-contenido.md) |
 | Ítems fuera del Motor | [`adr/0007-items-referencia-validada.md`](adr/0007-items-referencia-validada.md) |
 | Outbox e idempotencia | [`adr/0008-outbox-idempotencia.md`](adr/0008-outbox-idempotencia.md) |
+| El Motor entrega contenido al abrir | [`adr/0009-motor-entrega-contenido-al-abrir.md`](adr/0009-motor-entrega-contenido-al-abrir.md) |
 | Flujos end-to-end | [`flujos.md`](flujos.md) |
 | Sobre y eventos actuales | [`eventos.md`](eventos.md) |
 | Modelo de dominio y persistencia | [`modelo-dominio.md`](modelo-dominio.md), [`modelo-persistencia.md`](modelo-persistencia.md) |

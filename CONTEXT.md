@@ -75,8 +75,12 @@ _Evitar_: Copia, Snapshot
 ### Referenciado, no propio
 
 **Asignación**:
-Unión entre un desafío y el roadmap de un curso (orden, fechas, obligatoriedad). Roadmap/Cursos la definen, el Motor nunca la guarda.
+Unión única entre un desafío y el roadmap de un curso (orden, fechas, obligatoriedad). Un mismo desafío aparece como máximo una vez en cada roadmap; Roadmap/Cursos define la asignación y el Motor nunca la guarda.
 _Evitar_: Desafío de curso
+
+**Elegibilidad**:
+Decisión de Roadmap sobre si un alumno puede abrir un desafío asignado en un curso, acompañada por el motivo y el contexto de la asignación.
+_Evitar_: Permiso del Motor, Desbloqueo
 
 **Obligatorio**:
 Atributo de la asignación que dice si el desafío es obligatorio en ese curso. Roadmap lo decide, el Motor solo lo replica en eventos.
