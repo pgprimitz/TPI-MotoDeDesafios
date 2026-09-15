@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Mapa de flujos e integraciones del Motor de desafíos">
+  <title>Flujos de integración | Motor de desafíos</title>
+  <style>
+    :root {
+      --canvas: #fbfbfa;
+      --surface: #fff;
+      --ink: #2f3437;
+      --muted: #787774;
+      --line: #eaeaea;
+      --soft-blue: #e1f3fe;
+      --blue: #1f6c9f;
+      --soft-green: #edf3ec;
+      --green: #346538;
+      --soft-yellow: #fbf3db;
+      --yellow: #956400;
+      --soft-red: #fdebec;
+      --red: #9f2f2d;
+      --sans: "SF Pro Display", "Geist Sans", "Helvetica Neue", sans-serif;
+      --serif: "Lyon Text", "Newsreader", "Playfair Display", Georgia, serif;
+      --mono: "Geist Mono", "SF Mono", "JetBrains Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--canvas);
+      color: var(--ink);
+      font-family: var(--sans);
+      line-height: 1.6;
+    }
+    a { color: inherit; }
+    .shell { width: min(1180px, calc(100% - 48px)); margin: 0 auto; }
+    header { padding: 28px 0 88px; border-bottom: 1px solid var(--line); }
+    .topline { display: flex; justify-content: space-between; gap: 24px; align-items: center; }
+    .eyebrow, .label, .tag {
+      font-family: var(--mono);
+      font-size: .72rem;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+    .eyebrow { color: var(--muted); }
+    .version { color: var(--blue); background: var(--soft-blue); padding: 4px 9px; border-radius: 999px; }
+    h1, h2, h3 { margin: 0; font-weight: 500; }
+    h1 { max-width: 850px; margin-top: 76px; font-family: var(--serif); font-size: clamp(3.2rem, 8vw, 7.4rem); letter-spacing: -.045em; line-height: .93; }
+    .lead { max-width: 680px; margin: 30px 0 0; color: var(--muted); font-size: 1.08rem; }
+    nav { display: flex; flex-wrap: wrap; gap: 8px 22px; margin-top: 40px; font-family: var(--mono); font-size: .76rem; }
+    nav a { color: var(--muted); text-decoration: none; border-bottom: 1px solid transparent; }
+    nav a:hover { color: var(--ink); border-color: var(--ink); }
+    main { padding: 88px 0 120px; }
+    section { scroll-margin-top: 30px; margin-bottom: 108px; }
+    .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 30px; margin-bottom: 28px; border-bottom: 1px solid var(--line); padding-bottom: 14px; }
+    h2 { font-size: clamp(1.7rem, 3vw, 2.6rem); letter-spacing: -.035em; }
+    h3 { font-size: 1.15rem; letter-spacing: -.015em; }
+    .section-index { color: var(--muted); font-family: var(--mono); font-size: .75rem; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+    .card { grid-column: span 4; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 26px; }
+    .card.wide { grid-column: span 8; }
+    .card.full { grid-column: 1 / -1; }
+    .card p { color: var(--muted); margin: 12px 0 0; }
+    .tag { display: inline-block; margin-bottom: 20px; padding: 4px 9px; border-radius: 999px; }
+    .tag.in { color: var(--blue); background: var(--soft-blue); }
+    .tag.out { color: var(--green); background: var(--soft-green); }
+    .tag.pending { color: var(--yellow); background: var(--soft-yellow); }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); border-radius: 8px; }
+    table { width: 100%; min-width: 930px; border-collapse: collapse; font-size: .9rem; }
+    th, td { text-align: left; vertical-align: top; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+    tr:last-child td { border-bottom: 0; }
+    th { color: var(--muted); font-family: var(--mono); font-size: .68rem; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; background: #f9f9f8; }
+    td small { display: block; color: var(--muted); margin-top: 4px; }
+    .status { display: inline-block; padding: 3px 8px; border-radius: 999px; font-family: var(--mono); font-size: .66rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+    .status.ok { color: var(--green); background: var(--soft-green); }
+    .status.partial { color: var(--yellow); background: var(--soft-yellow); }
+    .dependency-contract {
+      min-width: 220px;
+      border: 0;
+      padding: 0;
+    }
+    .dependency-contract summary {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      list-style: none;
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .dependency-contract summary::-webkit-details-marker { display: none; }
+    .dependency-contract summary::before {
+      content: "+";
+      display: inline-grid;
+      place-items: center;
+      width: 18px;
+      height: 18px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--muted);
+      font-size: .8rem;
+      line-height: 1;
+    }
+    .dependency-contract[open] summary::before {
+      content: "−";
+      color: var(--ink);
+    }
+    .dependency-contract summary:focus-visible {
+      outline: 2px solid var(--blue);
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+    .contract-action { color: var(--muted); }
+    .dependency-contract summary:hover .contract-action,
+    .dependency-contract[open] summary .contract-action { color: var(--ink); }
+    .contract-detail {
+      margin: 12px 0 0 26px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: .82rem;
+    }
+    .contract-detail p { margin: 0; }
+    .contract-detail p + p { margin-top: 9px; }
+    .contract-detail code { white-space: normal; overflow-wrap: anywhere; }
+    .contract-label {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: .65rem;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .decision-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 32px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      border-top: 1px solid var(--line);
+    }
+    .decision-list li {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr);
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .decision-list .number {
+      padding-top: 3px;
+      color: var(--blue);
+      font-family: var(--mono);
+      font-size: .72rem;
+    }
+    .decision-list strong { display: block; font-weight: 500; }
+    .decision-list p { margin: 3px 0 0; color: var(--muted); font-size: .88rem; }
+    .ownership-table { min-width: 0; }
+    .ownership-table td { width: 50%; }
+    .ownership-table ul { list-style: none; margin: 0; padding: 0; }
+    .ownership-table li { position: relative; padding-left: 16px; }
+    .ownership-table li + li { margin-top: 8px; }
+    .ownership-table li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: .72em;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+    .ownership-table td:last-child li::before { background: var(--muted); }
+    .diagram-note { color: var(--muted); margin: 14px 0 0; font-size: .88rem; }
+    .model-title { margin-top: 32px; }
+    .flow { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 28px; margin-top: 16px; }
+    .flow:first-child { margin-top: 0; }
+    .flow-title { display: flex; justify-content: space-between; gap: 24px; align-items: baseline; }
+    .flow-title h3 { font-size: 1.35rem; }
+    .flow-title .number { color: var(--muted); font-family: var(--mono); font-size: .72rem; }
+    .flow-note { color: var(--muted); margin: 8px 0 22px; max-width: 780px; }
+    .sequence { display: grid; gap: 2px; border-top: 1px solid var(--line); }
+    .mermaid { overflow-x: auto; margin: 24px 0 4px; padding: 18px; border: 1px solid var(--line); background: #fdfdfc; }
+    .mermaid svg { max-width: 100%; height: auto; }
+    .mermaid-ready .sequence { display: none; }
+    .step { display: grid; grid-template-columns: 160px minmax(130px, 1fr) 160px; align-items: center; min-height: 49px; border-bottom: 1px solid var(--line); font-size: .88rem; }
+    .actor { font-family: var(--mono); font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+    .actor.right { text-align: right; }
+    .message { padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+    .message .arrow { color: var(--blue); font-size: 1.1rem; }
+    .message.reverse { justify-content: flex-end; }
+    .message.reverse .arrow { order: 2; color: var(--green); }
+    .message.internal { grid-column: 1 / -1; color: var(--muted); font-style: italic; justify-content: center; }
+    .message.internal .arrow { color: var(--muted); }
+    .contract-list { list-style: none; padding: 0; margin: 18px 0 0; }
+    .contract-list li { border-top: 1px solid var(--line); padding: 11px 0; }
+    .contract-list li::before { content: ""; display: inline-block; width: 6px; height: 6px; margin: 0 10px 2px 0; border-radius: 50%; background: var(--blue); }
+    code { font-family: var(--mono); font-size: .84em; background: #f7f6f3; border: 1px solid var(--line); padding: 2px 5px; border-radius: 4px; }
+    .callout { border-left: 3px solid var(--blue); padding: 4px 0 4px 18px; color: var(--muted); }
+    .callout.pending { border-color: var(--yellow); }
+    details { border-bottom: 1px solid var(--line); padding: 17px 0; }
+    summary { cursor: pointer; font-size: 1rem; }
+    summary::marker { color: var(--muted); }
+    details p { color: var(--muted); max-width: 850px; margin: 12px 0 4px; }
+    footer { border-top: 1px solid var(--line); padding: 28px 0 45px; color: var(--muted); font-family: var(--mono); font-size: .72rem; }
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 30px, 1180px); }
+      header { padding-bottom: 55px; }
+      h1 { margin-top: 52px; font-size: clamp(3rem, 17vw, 5.5rem); }
+      main { padding-top: 58px; }
+      section { margin-bottom: 76px; }
+      .card, .card.wide { grid-column: 1 / -1; }
+      .step { grid-template-columns: 92px minmax(120px, 1fr) 92px; font-size: .8rem; }
+      .actor { font-size: .6rem; }
+      .flow { padding: 20px 15px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <div class="topline">
+        <span class="eyebrow">T03 · Motor de desafíos</span>
+        <span class="version">Mapa de integración</span>
+      </div>
+      <h1>Quién nos pide qué.<br>Qué devolvemos.</h1>
+      <p class="lead">Recorridos completos del Motor: autorización, contenido, corrección, resultados, economía y notificaciones. Cada flecha tiene un dueño y un canal.</p>
+      <nav aria-label="Secciones del documento">
+        <a href="#mapa">Dependencias</a>
+        <a href="#decisiones">Decisiones</a>
+        <a href="#resumen">Resumen</a>
+        <a href="#modelo">Modelo</a>
+        <a href="#contratos">Contratos</a>
+        <a href="#flujos">Flujos</a>
+        <a href="#fuera">Fuera del Motor</a>
+        <a href="#pendientes">Por cerrar</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section id="mapa">
+      <div class="section-head"><h2>Mapa de dependencias</h2></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Grupo</th><th>El grupo entrega al Motor</th><th>El Motor entrega al grupo</th><th>Canal</th><th>Contrato</th></tr></thead>
+          <tbody>
+            <tr><td>Gateway / Identidad <small>T01</small></td><td>Token validado, identidad y contexto</td><td>Respuestas REST del Motor</td><td>REST a través del Gateway</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Responsabilidad</span>Valida autenticidad y vigencia del token. Propaga el contexto sin decidir la elegibilidad académica.</p><p><span class="contract-label">Rutas del Motor</span><code>POST /desafios</code>, <code>GET /desafios</code>, <code>PATCH /desafios/{desafioId}</code>, <code>POST /intentos</code>, <code>GET /intentos/{intentoId}</code> y <code>POST /intentos/{intentoId}/entrega</code>.</p><p>Las llamadas sincrónicas entre servicios también pasan por el Gateway.</p></div></details></td></tr>
+            <tr><td>Roadmap y Progreso <small>T10</small></td><td>Elegibilidad, fechas, obligatoriedad y recuperación</td><td>Catálogo publicado y <code>INTENTO_FINALIZADO</code></td><td>REST + Kafka</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Motor consulta</span><code>GET /elegibilidad</code> con <code>alumnoId</code>, <code>desafioId</code> y <code>cursoId</code>. Recibe habilitación, desbloqueo, fechas, obligatoriedad, recuperación y motivo de rechazo.</p><p><span class="contract-label">Motor entrega</span><code>GET /desafios?estado=PUBLICADO</code> y el evento <code>INTENTO_FINALIZADO</code>. Roadmap aplica XP, vidas, progreso, ranking y reintentos.</p><p>La clave funcional del resultado es <code>intentoId</code>.</p></div></details></td></tr>
+            <tr><td>Teóricos <small>T04</small></td><td>Corrección de entregas teóricas</td><td>Referencia de versión y entrega</td><td>REST a través del Gateway</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Corrección</span>El Motor envía <code>intentoId</code>, desafío, versión, alumno, curso y entrega. T04 devuelve <code>estadoCorreccion</code>, <code>aprobado</code> y <code>puntaje</code>.</p><p>T04 corrige contra la versión recibida, no contra la vigente.</p></div></details></td></tr>
+            <tr><td>Prácticos <small>T05</small></td><td>Corrección de entregas prácticas</td><td>Referencia de versión y entrega</td><td>REST a través del Gateway</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Corrección</span>El Motor envía <code>intentoId</code>, desafío, versión, alumno, curso y entrega. T05 devuelve <code>estadoCorreccion</code>, <code>aprobado</code> y <code>puntaje</code>.</p><p>T05 puede mediar la ejecución en Sandbox, pero el Motor solo recibe la corrección.</p></div></details></td></tr>
+            <tr><td>Evaluador IA <small>T07</small></td><td><code>SCORE_IA_CALCULADO</code></td><td>Referencia del intento y versión</td><td>Evento, mecanismo por confirmar</td><td><details class="dependency-contract"><summary><span class="status partial">Parcial</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Motor recibe</span><code>SCORE_IA_CALCULADO</code> asociado a <code>intentoId</code>. La carga mínima incluye <code>scoreIA</code> y <code>timestamp</code>; <code>rubricVersion</code> y justificación están pendientes.</p><p><span class="contract-label">Después del cierre</span>El Motor actualiza el score y republica <code>INTENTO_FINALIZADO</code> con el mismo <code>intentoId</code>.</p><p>Topic, productor, envío de referencia y política de reintentos todavía deben acordarse con T07.</p></div></details></td></tr>
+            <tr><td>Banco <small>T08</small></td><td>No envía solicitudes</td><td><code>INTENTO_FINALIZADO</code></td><td>Kafka</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Consumo</span>Recibe el sobre común de <code>INTENTO_FINALIZADO</code>, incluidos <code>cursoId</code>, <code>obligatorio</code>, estado y resultado.</p><p><span class="contract-label">Regla</span>Acredita solo si <code>estado=CERRADO</code> y <code>aprobado=true</code>. Ignora los intentos vencidos o no aprobados.</p><p>Aplica idempotencia por <code>intentoId</code>.</p></div></details></td></tr>
+            <tr><td>Social y Notificaciones <small>T11</small></td><td>No envía solicitudes de negocio</td><td><code>DESAFIO_PUBLICADO</code> e <code>INTENTO_FINALIZADO</code></td><td>Kafka</td><td><details class="dependency-contract"><summary><span class="status ok">Definido</span><span class="contract-action">Ver contrato</span></summary><div class="contract-detail"><p><span class="contract-label">Consumo</span>Recibe <code>DESAFIO_PUBLICADO</code> al publicar y <code>INTENTO_FINALIZADO</code> al cerrar o vencer.</p><p><span class="contract-label">Regla</span>Decide plantilla, destinatarios y momento. La nota disponible se deriva de <code>INTENTO_FINALIZADO</code>; no hay un evento separado.</p><p>El Motor publica al menos una vez mediante outbox.</p></div></details></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="decisiones">
+      <div class="section-head"><h2>Decisiones del Motor</h2><span class="section-index">6 reglas</span></div>
+      <ol class="decision-list">
+        <li><span class="number">01</span><div><strong>Roadmap autoriza.</strong><p>Asignaciones, fechas, desbloqueos, vidas y reintentos quedan fuera de T03.</p></div></li>
+        <li><span class="number">02</span><div><strong>La versión se congela al abrir.</strong><p>Cada edición crea una versión nueva y el intento conserva la que recibió.</p></div></li>
+        <li><span class="number">03</span><div><strong>El reloj se frena al entregar.</strong><p>La demora del corrector o del evaluador no consume tiempo del alumno.</p></div></li>
+        <li><span class="number">04</span><div><strong>T03 no calcula recompensas.</strong><p>Roadmap decide XP y vidas. Banco decide monedas.</p></div></li>
+        <li><span class="number">05</span><div><strong>Un hecho, un evento.</strong><p><code>INTENTO_FINALIZADO</code> cubre cierres y vencimientos. No hay eventos separados para vidas o notas.</p></div></li>
+        <li><span class="number">06</span><div><strong>Kafka entrega al menos una vez.</strong><p>T03 usa outbox y los consumidores aplican idempotencia por <code>intentoId</code>.</p></div></li>
+      </ol>
+    </section>
+
+    <section id="resumen">
+      <div class="section-head"><h2>Resumen del recorrido</h2></div>
+      <pre class="mermaid" aria-label="Resumen de las integraciones del Motor">flowchart LR
+    A[Alumno] --&gt; G[Gateway]
+    P[Profesor] --&gt; G
+    G --&gt; M[Motor T03]
+    M --&gt;|consulta elegibilidad| R[Roadmap]
+    R --&gt;|contexto| M
+    M --&gt;|corrección| C[T04 / T05]
+    C --&gt;|resultado| M
+    M --&gt;|hechos| K[(Kafka)]
+    K --&gt; R
+    K --&gt; B[Banco]
+    K --&gt; N[T11]</pre>
+      <p class="diagram-note">El Motor coordina el intento. Cada grupo conserva sus propias reglas y datos.</p>
+    </section>
+
+    <section id="modelo">
+      <div class="section-head"><h2>Límites y modelo de datos</h2></div>
+      <div class="table-wrap">
+        <table class="ownership-table">
+          <thead><tr><th>El Motor guarda</th><th>Queda fuera de T03</th></tr></thead>
+          <tbody><tr><td><ul><li>Metadatos del desafío y su dueño</li><li>Versiones inmutables</li><li>Intentos, entregas, estados y tiempos</li><li>Corrección y <code>scoreIA</code> recibidos</li><li>Eventos pendientes en outbox</li></ul></td><td><ul><li>Asignaciones, cursos y desbloqueos</li><li>Preguntas, respuestas, código y casos de prueba</li><li>XP, vidas, monedas e ítems</li><li>Plantillas, destinatarios y mensajes</li></ul></td></tr></tbody>
+        </table>
+      </div>
+      <h3 class="model-title">Entidades persistidas por T03</h3>
+      <pre class="mermaid" aria-label="Entidades persistidas por el Motor">erDiagram
+    DESAFIO ||--o{ DESAFIO_VERSION : tiene
+    DESAFIO ||--o{ INTENTO : recibe
+    DESAFIO_VERSION ||--o{ INTENTO : congela
+    INTENTO ||--o{ EVENTO_OUTBOX : genera
+    DESAFIO {
+      uuid id PK
+      varchar titulo
+      text descripcion
+      varchar dificultad
+      varchar tipo
+      smallint reintentos_permitidos
+      int duracion_maxima_min
+      varchar estado
+      uuid owner_id
+      boolean es_recuperacion
+      boolean borrado
+      int version_actual
+    }
+    DESAFIO_VERSION {
+      uuid id PK
+      uuid desafio_id FK
+      int version
+      varchar estado
+      varchar titulo
+      varchar dificultad
+      varchar tipo
+      smallint reintentos_permitidos
+      int duracion_maxima_min
+    }
+    INTENTO {
+      uuid id PK
+      uuid desafio_id FK
+      int desafio_version
+      varchar idempotencia_key UK
+      uuid alumno_id
+      uuid curso_id
+      boolean obligatorio
+      varchar estado
+      timestamptz inicio
+      timestamptz entrega
+      int tiempo_segundos
+      varchar puntualidad
+      boolean aprobado
+      int puntaje
+      int score_ia
+    }
+    EVENTO_OUTBOX {
+      uuid id PK
+      uuid intento_id
+      varchar event_type
+      jsonb payload
+      varchar estado
+      int reintentos
+    }</pre>
+    </section>
+
+    <section id="contratos">
+      <div class="section-head"><h2>Contratos de entrada y salida</h2></div>
+      <div class="grid">
+        <article class="card"><span class="tag in">Entrada</span><h3>Roadmap autoriza</h3><p>Antes de abrir, devuelve habilitación, desbloqueo, fechas, obligatoriedad y contexto de recuperación. El Motor no guarda la asignación ni vidas.</p></article>
+        <article class="card"><span class="tag in">Entrada</span><h3>T04 / T05 corrigen</h3><p>Reciben entrega, intento, desafío y versión. Devuelven aprobado, puntaje y estado de corrección. El contenido permanece fuera del Motor.</p></article>
+        <article class="card"><span class="tag pending">Entrada parcial</span><h3>T07 puntúa IA</h3><p>Entrega un score asociado a <code>intentoId</code>. Puede llegar después del cierre; el nombre del evento y su esquema todavía se acuerdan.</p></article>
+        <article class="card"><span class="tag out">Salida</span><h3>Roadmap consume hechos</h3><p><code>INTENTO_FINALIZADO</code> alimenta XP, progreso, vidas, ranking y desbloqueos. No existe evento de reintentos agotados.</p></article>
+        <article class="card"><span class="tag out">Salida</span><h3>Banco acredita</h3><p>Usa el resultado aprobado, <code>cursoId</code> y <code>obligatorio</code> para su ledger. El Motor no calcula monedas ni envía ítems.</p></article>
+        <article class="card"><span class="tag out">Salida</span><h3>Notificaciones informa</h3><p>Consume <code>DESAFIO_PUBLICADO</code> e <code>INTENTO_FINALIZADO</code> y decide plantilla, destinatarios y momento.</p></article>
+      </div>
+    </section>
+
+    <section id="flujos">
+      <div class="section-head"><h2>Flujos completos</h2></div>
+
+      <article class="flow">
+        <div class="flow-title"><h3>Crear y publicar un desafío</h3><span class="number">FLUJO 01</span></div>
+        <p class="flow-note">T03 crea la identidad y su primera versión. Luego publica la versión y avisa a los consumidores.</p>
+        <pre class="mermaid">sequenceDiagram
+    participant P as Profesor/Admin
+    participant G as Gateway
+    participant M as Motor
+    participant K as Kafka
+    participant R as Roadmap
+    participant N as Notificaciones
+    P-&gt;&gt;G: Crear desafío
+    G-&gt;&gt;M: POST /desafios
+    M--&gt;&gt;P: BORRADOR + desafioId + version 1
+    P-&gt;&gt;G: Solicitar publicación de versión 1
+    G-&gt;&gt;M: POST /desafios/id/versiones/1/publicar
+    M-&gt;&gt;M: Activar versión 1
+    M-&gt;&gt;K: DESAFIO_PUBLICADO
+    K--&gt;&gt;N: Notificación
+    R-&gt;&gt;G: GET publicados
+    G-&gt;&gt;M: GET publicados
+    M--&gt;&gt;G: Catálogo publicado
+    G--&gt;&gt;R: Catálogo publicado</pre>
+        <div class="sequence">
+          <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Crear desafío</span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message reverse">BORRADOR + desafioId + versión 1 <span class="arrow">←</span></span><span class="actor right">Profesor / Admin</span></div>
+          <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Publicar versión 1</span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Activar versión 1 <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>DESAFIO_PUBLICADO</span><span class="actor right">Kafka → T11</span></div>
+          <div class="step"><span class="actor">Roadmap</span><span class="message"><span class="arrow">→</span>GET publicados</span><span class="actor right">Gateway</span></div>
+          <div class="step"><span class="actor">Gateway</span><span class="message reverse">Catálogo publicado <span class="arrow">←</span></span><span class="actor right">Roadmap</span></div>
+        </div>
+      </article>
+
+      <article class="flow">
+        <div class="flow-title"><h3>Editar y publicar una versión</h3><span class="number">FLUJO 02</span></div>
+        <p class="flow-note">Una edición crea una nueva versión en borrador. La versión publicada continúa activa hasta que T03 publica la nueva.</p>
+        <pre class="mermaid">sequenceDiagram
+    participant P as Profesor/Admin
+    participant G as Gateway
+    participant M as Motor
+    P-&gt;&gt;G: Editar metadatos
+    G-&gt;&gt;M: PATCH /desafios/id
+    M-&gt;&gt;M: Crear revisión N+1 en BORRADOR
+    M--&gt;&gt;P: desafioId + numeroVersion N+1
+    P-&gt;&gt;G: Solicitar publicación de versión N+1
+    G-&gt;&gt;M: POST /desafios/id/versiones/N+1/publicar
+    M-&gt;&gt;M: Activar N+1
+    Note over M,P: Los intentos anteriores conservan su versión</pre>
+        <div class="sequence">
+          <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Editar metadatos</span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Crear revisión N+1 en borrador <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message reverse">Devolver desafioId + versión N+1 <span class="arrow">←</span></span><span class="actor right">Profesor / Admin</span></div>
+          <div class="step"><span class="actor">Profesor / Admin</span><span class="message"><span class="arrow">→</span>Publicar versión N+1</span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Activar N+1; los intentos anteriores no cambian <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+        </div>
+      </article>
+
+      <article class="flow">
+        <div class="flow-title"><h3>Abrir un intento autorizado</h3><span class="number">FLUJO 03</span></div>
+        <p class="flow-note">El Gateway autentica. Roadmap autoriza. El Motor congela <code>version_actual</code> y crea el intento, con idempotencia.</p>
+        <pre class="mermaid">sequenceDiagram
+    participant A as Alumno
+    participant G as Gateway
+    participant M as Motor
+    participant R as Roadmap
+    A-&gt;&gt;G: desafioId, cursoId, clave
+    G-&gt;&gt;M: POST /intentos + identidad
+    M-&gt;&gt;G: Consultar elegibilidad
+    G-&gt;&gt;R: GET /elegibilidad
+    R--&gt;&gt;G: Habilitación, fechas y contexto
+    G--&gt;&gt;M: Respuesta de Roadmap
+    alt Habilitado
+        M-&gt;&gt;M: Congelar version_actual
+        M-&gt;&gt;M: Crear intento ABIERTO
+        M--&gt;&gt;A: Intento abierto
+    else Rechazado
+        M--&gt;&gt;A: Motivo de rechazo
+    end</pre>
+        <div class="sequence">
+          <div class="step"><span class="actor">Alumno</span><span class="message"><span class="arrow">→</span>desafioId, cursoId, clave</span><span class="actor right">Gateway</span></div>
+          <div class="step"><span class="actor">Gateway</span><span class="message"><span class="arrow">→</span>POST /intentos + identidad</span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>Consultar elegibilidad</span><span class="actor right">Gateway</span></div>
+          <div class="step"><span class="actor">Gateway</span><span class="message"><span class="arrow">→</span>GET /elegibilidad</span><span class="actor right">Roadmap</span></div>
+          <div class="step"><span class="actor">Roadmap</span><span class="message reverse">Habilitación, fechas, contexto <span class="arrow">←</span></span><span class="actor right">Gateway</span></div>
+          <div class="step"><span class="actor">Gateway</span><span class="message reverse">Respuesta de Roadmap <span class="arrow">←</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Congelar versión y crear ABIERTO <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message reverse">Intento abierto <span class="arrow">←</span></span><span class="actor right">Alumno</span></div>
+        </div>
+      </article>
+
+      <article class="flow">
+        <div class="flow-title"><h3>Entregar y corregir</h3><span class="number">FLUJO 04</span></div>
+        <p class="flow-note">El reloj termina al entregar. El corrector debe resolver contra la versión recibida, no contra la vigente.</p>
+        <pre class="mermaid">sequenceDiagram
+    participant A as Alumno
+    participant G as Gateway
+    participant M as Motor
+    participant C as T04/T05
+    participant E as Evaluador IA
+    participant K as Kafka
+    A-&gt;&gt;G: Entregar intento
+    G-&gt;&gt;M: POST /intentos/id/entrega
+    M-&gt;&gt;M: Frenar reloj y pasar a corrección
+    M-&gt;&gt;G: Solicitar corrección
+    G-&gt;&gt;C: Entrega + desafioId + numeroVersion
+    C--&gt;&gt;G: Corrección + puntaje
+    G--&gt;&gt;M: Corrección + puntaje
+    opt Score IA disponible
+        E--&gt;&gt;K: Score asociado
+        K--&gt;&gt;M: Score asociado
+    end
+    M-&gt;&gt;M: Guardar y cerrar
+    M-&gt;&gt;K: INTENTO_FINALIZADO (CERRADO)
+    opt Score IA diferido
+        E--&gt;&gt;K: SCORE_IA_CALCULADO
+        K--&gt;&gt;M: SCORE_IA_CALCULADO
+        M-&gt;&gt;M: Actualizar scoreIA
+        M-&gt;&gt;K: Republicar con mismo intentoId
+    end</pre>
+        <div class="sequence">
+          <div class="step"><span class="actor">Alumno</span><span class="message"><span class="arrow">→</span>Entrega</span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Frena reloj y pasa a EN_CORRECCION <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>Solicitar corrección</span><span class="actor right">Gateway</span></div>
+          <div class="step"><span class="actor">Gateway</span><span class="message"><span class="arrow">→</span>Intento + entrega + desafío + versión</span><span class="actor right">T04 / T05</span></div>
+          <div class="step"><span class="actor">T04 / T05</span><span class="message reverse">Corrección y puntaje <span class="arrow">←</span></span><span class="actor right">Gateway</span></div>
+          <div class="step"><span class="actor">Gateway</span><span class="message reverse">Corrección y puntaje <span class="arrow">←</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Cierra y guarda outbox en la misma transacción <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>INTENTO_FINALIZADO</span><span class="actor right">Kafka</span></div>
+          <div class="step"><span class="actor">T07</span><span class="message"><span class="arrow">→</span>Score IA, si llega diferido</span><span class="actor right">Kafka</span></div>
+          <div class="step"><span class="actor">Kafka</span><span class="message"><span class="arrow">→</span>Score IA</span><span class="actor right">Motor</span></div>
+        </div>
+      </article>
+
+      <article class="flow">
+        <div class="flow-title"><h3>Vencer sin entrega</h3><span class="number">FLUJO 05</span></div>
+        <p class="flow-note">El vencimiento es un resultado publicado. Roadmap decide su efecto sobre vidas, XP, progreso y reintentos.</p>
+        <pre class="mermaid">sequenceDiagram
+    participant M as Motor
+    participant K as Kafka
+    participant R as Roadmap
+    participant B as Banco
+    participant N as Notificaciones
+    M-&gt;&gt;M: Detectar plazo cerrado sin entrega
+    M-&gt;&gt;M: Marcar VENCIDO
+    M-&gt;&gt;K: INTENTO_FINALIZADO (VENCIDO)
+    K--&gt;&gt;R: Resultado para progreso y vidas
+    K--&gt;&gt;B: Ignorar si no está aprobado
+    K--&gt;&gt;N: Notificar si corresponde</pre>
+        <div class="sequence">
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Detecta cierre de plazo sin entrega <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Marca VENCIDO <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>INTENTO_FINALIZADO (VENCIDO)</span><span class="actor right">Kafka</span></div>
+          <div class="step"><span class="actor">Kafka</span><span class="message"><span class="arrow">→</span>Hecho consumido</span><span class="actor right">Roadmap / T11</span></div>
+          <div class="step"><span class="actor">Banco</span><span class="message internal"><span class="arrow">·</span>Ignora si no está aprobado <span class="arrow">·</span></span><span class="actor right">Banco</span></div>
+        </div>
+      </article>
+
+      <article class="flow">
+        <div class="flow-title"><h3>Reintentar y recuperar una vida</h3><span class="number">FLUJO 06</span></div>
+        <p class="flow-note">Roadmap cuenta reintentos y vidas. La recuperación usa el mismo ciclo del Motor, con una marca que Roadmap interpreta.</p>
+        <pre class="mermaid">sequenceDiagram
+    participant A as Alumno
+    participant G as Gateway
+    participant M as Motor
+    participant R as Roadmap
+    participant K as Kafka
+    R-&gt;&gt;R: Contar intentos y elegir recuperación
+    A-&gt;&gt;G: Abrir nuevo intento
+    G-&gt;&gt;M: POST /intentos
+    M-&gt;&gt;G: Consultar elegibilidad
+    G-&gt;&gt;R: Estado de vidas y reintentos
+    R--&gt;&gt;G: Autorizado + contexto
+    G--&gt;&gt;M: Autorizado + contexto
+    M-&gt;&gt;M: Crear intento nuevo
+    M--&gt;&gt;A: Intento abierto
+    M-&gt;&gt;K: INTENTO_FINALIZADO
+    K--&gt;&gt;R: Aplicar efecto en XP, vidas y progreso</pre>
+        <div class="sequence">
+          <div class="step"><span class="actor">Roadmap</span><span class="message internal"><span class="arrow">·</span>Cuenta intentos y selecciona recuperación si corresponde <span class="arrow">·</span></span><span class="actor right">Roadmap</span></div>
+          <div class="step"><span class="actor">Alumno</span><span class="message"><span class="arrow">→</span>Abrir nuevo intento</span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>Consultar elegibilidad</span><span class="actor right">Gateway</span></div>
+          <div class="step"><span class="actor">Gateway</span><span class="message"><span class="arrow">→</span>Estado de vidas y reintentos</span><span class="actor right">Roadmap</span></div>
+          <div class="step"><span class="actor">Roadmap</span><span class="message reverse">Autorizado + contexto <span class="arrow">←</span></span><span class="actor right">Gateway</span></div>
+          <div class="step"><span class="actor">Gateway</span><span class="message reverse">Autorizado + contexto <span class="arrow">←</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message internal"><span class="arrow">·</span>Crea intento nuevo con reloj propio <span class="arrow">·</span></span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>Resultado finalizado</span><span class="actor right">Kafka → Roadmap</span></div>
+          <div class="step"><span class="actor">Roadmap</span><span class="message internal"><span class="arrow">·</span>Acredita una vida si el desafío de recuperación fue aprobado <span class="arrow">·</span></span><span class="actor right">Roadmap</span></div>
+        </div>
+      </article>
+
+      <article class="flow">
+        <div class="flow-title"><h3>Distribuir resultado, economía y aviso</h3><span class="number">FLUJO 07</span></div>
+        <p class="flow-note">Un hecho, un evento. Cada consumidor aplica sus reglas sin que el Motor calcule XP, monedas, vidas ni mensajes.</p>
+        <pre class="mermaid">sequenceDiagram
+    participant M as Motor
+    participant K as Kafka
+    participant R as Roadmap
+    participant B as Banco
+    participant N as Notificaciones
+    participant E as Evaluador IA
+    M-&gt;&gt;K: INTENTO_FINALIZADO completo
+    K--&gt;&gt;R: XP, progreso, ranking y vidas
+    K--&gt;&gt;B: Acreditación si aprobado
+    K--&gt;&gt;N: Hecho para notificar
+    E--&gt;&gt;K: Score diferido
+    K--&gt;&gt;M: Score diferido
+    M-&gt;&gt;K: Republicar mismo intentoId</pre>
+        <div class="sequence">
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>INTENTO_FINALIZADO completo</span><span class="actor right">Kafka</span></div>
+          <div class="step"><span class="actor">Kafka</span><span class="message"><span class="arrow">→</span>XP, progreso, ranking, vidas</span><span class="actor right">Roadmap</span></div>
+          <div class="step"><span class="actor">Kafka</span><span class="message"><span class="arrow">→</span>Acreditación si aprobado</span><span class="actor right">Banco</span></div>
+          <div class="step"><span class="actor">Kafka</span><span class="message"><span class="arrow">→</span>Hecho para notificar</span><span class="actor right">Notificaciones</span></div>
+          <div class="step"><span class="actor">T07</span><span class="message"><span class="arrow">→</span>SCORE_IA_CALCULADO, si fue diferido</span><span class="actor right">Kafka</span></div>
+          <div class="step"><span class="actor">Kafka</span><span class="message"><span class="arrow">→</span>SCORE_IA_CALCULADO</span><span class="actor right">Motor</span></div>
+          <div class="step"><span class="actor">Motor</span><span class="message"><span class="arrow">→</span>Republicación con mismo intentoId</span><span class="actor right">Kafka</span></div>
+        </div>
+      </article>
+    </section>
+
+    <section id="fuera">
+      <div class="section-head"><h2>Fuera del Motor</h2></div>
+      <div class="grid">
+        <article class="card"><h3>T02 · Cursos y Matrícula</h3><p>Es dueño de pertenencia y ciclo de vida del curso. Roadmap usa ese contexto para resolver elegibilidad.</p></article>
+        <article class="card"><h3>T05 · Sandbox</h3><p>T05 media las ejecuciones aisladas. El Motor recibe una corrección, no código ejecutado ni artefactos.</p></article>
+        <article class="card"><h3>T09 · Mercado</h3><p>Administra inventario, reservas y consumo de ítems. El Motor no valida ni guarda referencias de inventario.</p></article>
+        <article class="card"><h3>T12 · Backoffice</h3><p>Administra parámetros globales. Roadmap y Banco aplican XP, monedas y vidas; el Motor no los calcula.</p></article>
+        <article class="card"><h3>T01 · Identidad</h3><p>El Gateway valida autenticidad y vigencia del token. La autorización de negocio para abrir la decide Roadmap.</p></article>
+        <article class="card"><h3>T11 · Encuestas</h3><p>Si la encuesta debe bloquear la revelación de resultados, T04/T11 y el Motor todavía deben acordar el contrato.</p></article>
+      </div>
+    </section>
+
+    <section id="pendientes">
+      <div class="section-head"><h2>Por cerrar con los grupos</h2></div>
+      <details open><summary>T07 · Score de IA diferido</summary><p>Definir topic, nombre del evento, productor, <code>rubricVersion</code>, justificación, timeout y política de republicación.</p></details>
+      <details><summary>T04 / T05 · Corrección</summary><p>Definir endpoints exactos, timeout, estados de corrección y contrato de idempotencia por <code>intentoId</code>.</p></details>
+      <details><summary>Consumidores · Kafka</summary><p>Acordar topic final, clave de partición, versión del sobre, reintentos y aplicación idempotente por <code>intentoId</code>.</p></details>
+    </section>
+  </main>
+
+  <footer><div class="shell">Documento vivo · <a href="flujos.md">Flujos</a> · <a href="contratos.md">Contratos</a> · Motor de desafíos T03</div></footer>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "base", themeVariables: {
+      fontFamily: "Geist Sans, Helvetica Neue, sans-serif",
+      primaryColor: "#f7f6f3",
+      primaryTextColor: "#2f3437",
+      primaryBorderColor: "#d7d7d4",
+      lineColor: "#787774",
+      actorBkg: "#ffffff",
+      actorBorder: "#b9bbb8",
+      signalColor: "#1f6c9f",
+      signalTextColor: "#2f3437",
+      noteBkgColor: "#fbf3db",
+      noteBorderColor: "#d8bd72"
+    } });
+    mermaid.run()
+      .then(() => document.documentElement.classList.add("mermaid-ready"))
+      .catch((error) => console.error("Unable to render Mermaid diagrams", error));
+  </script>
+</body>
+</html>

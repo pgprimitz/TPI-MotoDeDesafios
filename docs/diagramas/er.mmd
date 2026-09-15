@@ -1,0 +1,9 @@
+flowchart LR
+    D["DESAFIO<br/>id PK<br/>titulo<br/>descripcion<br/>dificultad<br/>tipo<br/>reintentos<br/>duracion_min<br/>estado<br/>owner_id<br/>es_recuperacion<br/>borrado<br/>version_actual"]
+    V["DESAFIO_VERSION<br/>id PK<br/>desafio_id FK<br/>version<br/>titulo<br/>dificultad<br/>tipo<br/>reintentos<br/>duracion_min"]
+    I["INTENTO<br/>id PK<br/>desafio_id FK<br/>desafio_version<br/>idempotencia_key UK<br/>alumno_id<br/>curso_id<br/>obligatorio<br/>estado<br/>inicio<br/>entrega<br/>tiempo_seg<br/>puntualidad<br/>aprobado<br/>puntaje<br/>score_ia"]
+    O["EVENTO_OUTBOX<br/>id PK<br/>intento_id<br/>event_type<br/>payload<br/>estado<br/>reintentos"]
+    D -->|"tiene"| V
+    D -->|"recibe"| I
+    V -->|"congela"| I
+    I -->|"genera"| O

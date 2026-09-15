@@ -1,0 +1,40 @@
+classDiagram
+    class Desafio {
+        +UUID id
+        +UUID ownerId
+        +titulo
+        +dificultad
+        +tipo
+        +reintentosPermitidos
+        +duracionMaximaMin
+        +estado
+        +marcaRecuperacion
+    }
+    class VersionDesafio {
+        +UUID id
+        +UUID desafioId
+        +numero
+    }
+    class Intento {
+        +UUID id
+        +UUID desafioId
+        +int numeroVersion
+        +UUID alumnoId
+        +UUID cursoId
+        +estado
+        +aprobado
+        +puntaje
+    }
+    class Contenido {
+        <<externo>>
+        +UUID desafioId
+    }
+    class Asignacion {
+        <<externo>>
+        +UUID cursoId
+        +obligatorio
+    }
+    Desafio "1" --> "*" VersionDesafio : congela
+    Desafio "1" --> "0..1" Contenido : tiene (T04/T05)
+    VersionDesafio "1" --> "*" Intento : abre con
+    Asignacion --> Intento : autoriza y da contexto

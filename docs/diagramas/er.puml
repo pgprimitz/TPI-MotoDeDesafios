@@ -1,0 +1,66 @@
+@startuml
+left to right direction
+skinparam linetype ortho
+
+entity DESAFIO {
+  * id : uuid <<PK>>
+  --
+  titulo : varchar
+  descripcion : text
+  dificultad : varchar
+  tipo : varchar
+  reintentos_permitidos : smallint
+  duracion_maxima_min : int
+  estado : varchar
+  owner_id : uuid
+  es_recuperacion : boolean
+  borrado : boolean
+  version_actual : int
+}
+
+entity DESAFIO_VERSION {
+  * id : uuid <<PK>>
+  --
+  desafio_id : uuid <<FK>>
+  version : int
+  titulo : varchar
+  dificultad : varchar
+  tipo : varchar
+  reintentos_permitidos : smallint
+  duracion_maxima_min : int
+}
+
+entity INTENTO {
+  * id : uuid <<PK>>
+  --
+  desafio_id : uuid <<FK>>
+  desafio_version : int
+  idempotencia_key : varchar <<UK>>
+  alumno_id : uuid
+  curso_id : uuid
+  obligatorio : boolean
+  estado : varchar
+  inicio : timestamptz
+  entrega : timestamptz
+  tiempo_segundos : int
+  puntualidad : varchar
+  aprobado : boolean
+  puntaje : int
+  score_ia : int
+}
+
+entity EVENTO_OUTBOX {
+  * id : uuid <<PK>>
+  --
+  intento_id : uuid
+  event_type : varchar
+  payload : jsonb
+  estado : varchar
+  reintentos : int
+}
+
+DESAFIO ||--o{ DESAFIO_VERSION : tiene
+DESAFIO ||--o{ INTENTO : recibe
+DESAFIO_VERSION ||--o{ INTENTO : congela
+INTENTO ||--o{ EVENTO_OUTBOX : genera
+@enduml

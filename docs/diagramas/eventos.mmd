@@ -1,0 +1,8 @@
+flowchart LR
+    M[Motor] --> T1([topic intento-finalizado])
+    T1 --> R[Roadmap]
+    T1 --> B[Banco]
+    T1 --> N[Notificaciones]
+    M --> T2([topic desafio-publicado])
+    T2 --> N
+    R -.->|GET publicados| M
